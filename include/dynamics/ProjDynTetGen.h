@@ -27,7 +27,7 @@ SOFTWARE.
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "tetgen.h"
+#include "TetGen.h"
 
 using namespace PD;
 

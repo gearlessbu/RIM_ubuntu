@@ -314,6 +314,7 @@ PDPositions& ProjDynSimulator::getVelocities()
 void PD::ProjDynSimulator::recomputeWeightedForces() {
 	m_fExtWeighted.resize(m_numVertices, 3);
 	m_fGravWeighted.resize(m_numVertices, 3);
+	// __pragma(omp parallel for num_threads(8))
 	PROJ_DYN_PARALLEL_FOR
 		for (int v = 0; v < m_numVertices; v++) {
 			for (int d = 0; d < 3; d++) {

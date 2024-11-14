@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "helpers/OpenGLBufferObject.h"
 #include "helpers/OpenGLTextureObject.h"
-#include "helpers/OpenGLFramebufferObject.h"
+#include "helpers/OpenGLFrameBufferObject.h"
 #include "helpers/OpenGLProgramObject.h"
 #include "helpers/CameraFPS.h"
 #include "gui/BaseGUI.h"

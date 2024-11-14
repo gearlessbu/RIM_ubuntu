@@ -35,7 +35,7 @@ SOFTWARE.
 #include "StopWatch.h"
 #ifndef __gl_h_
 #ifndef __GL_H_
-#include <GL\glew.h>
+#include <GL/glew.h>
 #endif
 #endif
 #include "cuda_gl_interop.h"

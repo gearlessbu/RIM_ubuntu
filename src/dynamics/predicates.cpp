@@ -119,11 +119,11 @@
 #ifdef CPU86
 #include <float.h>
 #endif /* CPU86 */
-#ifdef LINUX
+// #ifdef LINUX
 #include <fpu_control.h>
-#endif /* LINUX */
+// #endif /* LINUX */
 
-#include "dynamics/tetgen.h"            // Defines the symbol REAL (float or double).
+#include "dynamics/TetGen.h"            // Defines the symbol REAL (float or double).
 
 #ifdef USE_CGAL_PREDICATES
   #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>

@@ -26,7 +26,7 @@ SOFTWARE.
 #include <iostream>
 
 #include "dynamics/ProjDynMeshSampler.h"
-#include "dynamics/ProjDynutil.h"
+#include "dynamics/ProjDynUtil.h"
 #include "dynamics/ProjDynSimulator.h"
 
 PD::ProjDynMeshSampler::ProjDynMeshSampler()

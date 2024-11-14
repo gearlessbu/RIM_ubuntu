@@ -1,0 +1,6 @@
+add_subdirectory("cuda")
+add_subdirectory("dynamics")
+add_subdirectory("gui")
+add_subdirectory("helpers")
+add_subdirectory("immersed")
+add_subdirectory("managers")

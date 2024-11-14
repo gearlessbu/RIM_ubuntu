@@ -2,8 +2,8 @@
 
 #include "error_codes.h"
 
-#include <gl/glew.h>
-#include <gl/gl.h>
+#include <GL/glew.h>
+#include <GL/gl.h>
 #include <cstdint>
 #include <string>
 #include <vector>

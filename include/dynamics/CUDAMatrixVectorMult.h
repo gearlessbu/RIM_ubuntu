@@ -26,7 +26,7 @@ SOFTWARE.
 
 #pragma once
 #define NOMINMAX
-#include <Windows.h>
+// #include <Windows.h>
 
 // Uncomment the #define below to enable direct mapping of the vertex positions to the
 // GPU. This requires the glew libraries to be linked.
@@ -39,7 +39,7 @@ SOFTWARE.
 #ifdef ENABLE_DIRECT_BUFFER_MAP
 #ifndef __gl_h_
 #ifndef __GL_H_
-#include <GL\glew.h>
+#include <GL/glew.h>
 #endif
 #endif
 #endif
