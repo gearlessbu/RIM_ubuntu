@@ -2,6 +2,7 @@
 #include "helpers/OpenGLShaderObject.h"
 
 #include <sstream>
+#include <memory>
 #include <vector>
 
 namespace GLHelpers
@@ -13,66 +14,68 @@ namespace GLHelpers
 		glReleaseShaderCompiler();
 	}
 
-		ShaderObject::ShaderObject( /*EShaderType::E eType*/ ) :
-		//ShaderObject( eType ),
-		m_uiShaderHandle( 0 )
+	ShaderObject::ShaderObject(/*EShaderType::E eType*/) : // ShaderObject( eType ),
+														   m_uiShaderHandle(0)
 	{
-		//GLenum eOpenGLType = ShaderTypeToOpenGL( eType );
+		// GLenum eOpenGLType = ShaderTypeToOpenGL( eType );
 
-		//Assert( eOpenGLType != GL_INVALID_ENUM );
+		// Assert( eOpenGLType != GL_INVALID_ENUM );
 
-		//m_uiShaderHandle = glCreateShader( eOpenGLType );
+		// m_uiShaderHandle = glCreateShader( eOpenGLType );
 
 		check_opengl();
 	}
 
 	ShaderObject::~ShaderObject()
 	{
-		if ( m_uiShaderHandle != 0 ) {
-			glDeleteShader( m_uiShaderHandle );
+		if (m_uiShaderHandle != 0)
+		{
+			glDeleteShader(m_uiShaderHandle);
 		}
 
 		check_opengl();
 	}
 
-	void ShaderObject::UploadTextCode( const char* szCode, size_t sNumCharacters )
+	void ShaderObject::UploadTextCode(const char *szCode, size_t sNumCharacters)
 	{
-		Assert( szCode != nullptr );
+		Assert(szCode != nullptr);
 
-		const GLchar* pSource = ( const GLchar* ) szCode;
-		if ( sNumCharacters == 0 ) {
-			glShaderSource( m_uiShaderHandle, 1, &pSource, 0 );
+		const GLchar *pSource = (const GLchar *)szCode;
+		if (sNumCharacters == 0)
+		{
+			glShaderSource(m_uiShaderHandle, 1, &pSource, 0);
 		}
-		else {
-			GLint iLength = static_cast< GLint >( sNumCharacters );
+		else
+		{
+			GLint iLength = static_cast<GLint>(sNumCharacters);
 			// signature: (GLuint shader, GLsizei count, const GLchar** strings, const GLint* lengths);
-			glShaderSource( m_uiShaderHandle, 1, &pSource, &iLength );
+			glShaderSource(m_uiShaderHandle, 1, &pSource, &iLength);
 		}
 
 		check_opengl();
 	}
 
-	void ShaderObject::UploadTextCode( std::vector< const GLchar* >& listCode )
+	void ShaderObject::UploadTextCode(std::vector<const GLchar *> &listCode)
 	{
 		// Signature (GLuint shader, GLsizei count, const GLchar** strings, const GLint* lengths);
-		const GLchar* pSource = ( const GLchar* )listCode[ 0 ];
-		glShaderSource( m_uiShaderHandle, ( GLsizei )listCode.size(), &pSource, 0 );
+		const GLchar *pSource = (const GLchar *)listCode[0];
+		glShaderSource(m_uiShaderHandle, (GLsizei)listCode.size(), &pSource, 0);
 
 		check_opengl();
 	}
 
 	bool ShaderObject::Compile() const
 	{
-		glCompileShader( m_uiShaderHandle );
+		glCompileShader(m_uiShaderHandle);
 
 		GLint iTemp;
 
 		// signature: (GLuint shader, GLenum pname, GLint* param)
-		glGetShaderiv( m_uiShaderHandle, GL_COMPILE_STATUS, &iTemp );
+		glGetShaderiv(m_uiShaderHandle, GL_COMPILE_STATUS, &iTemp);
 
 		check_opengl();
 
-		bool bCompiled = ( iTemp == GL_TRUE );
+		bool bCompiled = (iTemp == GL_TRUE);
 
 		// Check the output parameters of the shader
 
@@ -91,23 +94,24 @@ namespace GLHelpers
 	std::string ShaderObject::GetInfoLog() const
 	{
 		GLint iLogLength;
-		glGetShaderiv( m_uiShaderHandle, GL_INFO_LOG_LENGTH, &iLogLength );
+		glGetShaderiv(m_uiShaderHandle, GL_INFO_LOG_LENGTH, &iLogLength);
 
-		if ( iLogLength == 0 ) {
+		if (iLogLength == 0)
+		{
 			return std::string();
 		}
 
-		std::unique_ptr< GLchar[] > infoLog( new GLchar[ iLogLength ] );
-		GLchar* pszInfoLog = infoLog.get();
+		std::unique_ptr<GLchar[]> infoLog(new GLchar[iLogLength]);
+		GLchar *pszInfoLog = infoLog.get();
 		GLsizei iWritten;
 
-		glGetShaderInfoLog( m_uiShaderHandle, iLogLength, &iWritten, pszInfoLog );
+		glGetShaderInfoLog(m_uiShaderHandle, iLogLength, &iWritten, pszInfoLog);
 
 		check_opengl();
 
 		std::stringstream ss;
 		ss << pszInfoLog;
-		
+
 		return ss.str();
 	}
 

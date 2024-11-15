@@ -1,5 +1,5 @@
 #include "immersed/screen_space_fluid.h"
-#include "helpers/shapes.h"
+#include "helpers/Shapes.h"
 
 #include "managers/TextureManager.h"
 #include "managers/GLStateManager.h"
@@ -15,12 +15,12 @@
 
 using namespace glm;
 
-ScreenSpaceFluid::ScreenSpaceFluid() 
+ScreenSpaceFluid::ScreenSpaceFluid()
 {
 	o_waterColor = vec4(0.5f, 0.5f, 1.0f, 0.001f);
 	o_size = 0.06f;
 
-	o_filterSize   = 4;
+	o_filterSize = 4;
 	o_filterWeightNor = 0.5f;
 	o_filterWeightPos = 0.5f;
 	o_normalSmooth = 0.0f;
@@ -39,12 +39,12 @@ ScreenSpaceFluid::ScreenSpaceFluid()
 	outputSize = ivec2(0, 0);
 
 	shapeType = SHAPE_TYPE::ST_QUAD;
-	//shapeType = SHAPE_TYPE::ST_POINTSPRITE; 
+	// shapeType = SHAPE_TYPE::ST_POINTSPRITE;
 
 	o_fxaa = true;
 
 	dirtyShaders = true;
-	dirtyShape   = true;
+	dirtyShape = true;
 }
 
 void ScreenSpaceFluid::ReleaseResources()
@@ -97,7 +97,8 @@ void ScreenSpaceFluid::InitResources()
 	positionsVAO.Create();
 
 	//// Load quad buffers
-	ShapeBuffers sb; createQuad(sb);
+	ShapeBuffers sb;
+	createQuad(sb);
 	quadPosBuffer.Create(GL_ARRAY_BUFFER);
 	quadNorBuffer.Create(GL_ARRAY_BUFFER);
 	quadTexCoordBuffer.Create(GL_ARRAY_BUFFER);
@@ -120,7 +121,6 @@ void ScreenSpaceFluid::InitResources()
 	sampler.setWrapMethod(GL_CLAMP_TO_EDGE);
 	sampler.setInterpolationMethod(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 	sampler.setParameter(GL_TEXTURE_COMPARE_MODE, GL_NONE);
-
 }
 
 void ScreenSpaceFluid::loadShape(SHAPE_TYPE type)
@@ -178,7 +178,7 @@ void ScreenSpaceFluid::createPrograms()
 	{
 		ProgramObject::ShaderPaths sp;
 		sp.commonPath = commonPath;
-		sp.vertexShaderFilename   = "density.vert";
+		sp.vertexShaderFilename = "density.vert";
 		sp.fragmentShaderFilename = "density.frag";
 		programDensity.CompileProgram(sp, nullptr);
 	}
@@ -198,7 +198,7 @@ void ScreenSpaceFluid::createPrograms()
 	{
 		ProgramObject::ShaderPaths sp;
 		sp.commonPath = commonPath;
-		sp.vertexShaderFilename   = "geometry.vert";
+		sp.vertexShaderFilename = "geometry.vert";
 		sp.fragmentShaderFilename = "geometry.frag";
 		programGeometry.CompileProgram(sp, nullptr);
 	}
@@ -214,7 +214,7 @@ void ScreenSpaceFluid::createPrograms()
 	{
 		ProgramObject::ShaderPaths sp;
 		sp.commonPath = commonPath;
-		sp.vertexShaderFilename   = "back.vert";
+		sp.vertexShaderFilename = "back.vert";
 		sp.fragmentShaderFilename = "back.frag";
 		programBackDepth.CompileProgram(sp, nullptr);
 	}
@@ -234,7 +234,7 @@ void ScreenSpaceFluid::createPrograms()
 	{
 		programSSFluid.CompileComputeProgram(nullptr, commonPath + "ssfluid.comp");
 	}
-	
+
 	{
 		programFXAA.CompileComputeProgram(nullptr, commonPath + "fxaa.comp");
 	}
@@ -244,18 +244,18 @@ void ScreenSpaceFluid::createPrograms()
 
 void ScreenSpaceFluid::createTextures(glm::ivec2 size)
 {
-	depthTex.create(size,                 GL_DEPTH_COMPONENT32F, nullptr, true);
-	backDepthTex.create(size,             GL_DEPTH_COMPONENT32F, nullptr, true);
-	normalTex.create(size,                GL_RGBA16F, nullptr, true);
-	normalBilateralAuxTex.create(size,    GL_RGBA16F, nullptr, true);
-	normalBilateralAuxTex2.create(size,   GL_RGBA16F, nullptr, true);
-	geometryTex.create(size,              GL_RGBA16F, nullptr, true);
-	geometryBilateralAuxTex.create(size,  GL_RGBA16F, nullptr, true);
+	depthTex.create(size, GL_DEPTH_COMPONENT32F, nullptr, true);
+	backDepthTex.create(size, GL_DEPTH_COMPONENT32F, nullptr, true);
+	normalTex.create(size, GL_RGBA16F, nullptr, true);
+	normalBilateralAuxTex.create(size, GL_RGBA16F, nullptr, true);
+	normalBilateralAuxTex2.create(size, GL_RGBA16F, nullptr, true);
+	geometryTex.create(size, GL_RGBA16F, nullptr, true);
+	geometryBilateralAuxTex.create(size, GL_RGBA16F, nullptr, true);
 	geometryBilateralAuxTex2.create(size, GL_RGBA32F, nullptr, true);
-	densityTex.create(size,               GL_R16F, nullptr, true);
-	sceneColorAuxTex.create(size,         GL_RGBA16F, nullptr, true);
+	densityTex.create(size, GL_R16F, nullptr, true);
+	sceneColorAuxTex.create(size, GL_RGBA16F, nullptr, true);
 
-	depthTex.setParameter    (GL_TEXTURE_COMPARE_MODE, GL_NONE);
+	depthTex.setParameter(GL_TEXTURE_COMPARE_MODE, GL_NONE);
 	backDepthTex.setParameter(GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
 	fbo.AttachColorTexture(normalTex, 0);
@@ -271,22 +271,26 @@ void ScreenSpaceFluid::loadQuadTex()
 	quadTex.Release();
 
 	std::string quadtex_name = "data/immersed/cloud.png"; //!!
-	if (!TextureManager::instance().hasTexture(quadtex_name)) TextureManager::instance().loadTexture(quadtex_name, true);
+	if (!TextureManager::instance().hasTexture(quadtex_name))
+		TextureManager::instance().loadTexture(quadtex_name, true);
 
 	if (TextureManager::instance().hasTexture(quadtex_name))
 	{
-		TextureData& texdata = TextureManager::instance().getTexture(quadtex_name);
-		quadTex = *((GLHelpers::TextureObject2D*)(texdata.gltex));
+		TextureData &texdata = TextureManager::instance().getTexture(quadtex_name);
+		quadTex = *((GLHelpers::TextureObject2D *)(texdata.gltex));
 		quadTex.generateMipmap();
 	}
 }
 
-void ScreenSpaceFluid::Render(CameraFPS& cam)
+void ScreenSpaceFluid::Render(CameraFPS &cam)
 {
-	if (o_bypass) return;
- 
-	if (dirtyShaders) createPrograms();
-	if (dirtyShape) loadShape(shapeType);
+	if (o_bypass)
+		return;
+
+	if (dirtyShaders)
+		createPrograms();
+	if (dirtyShape)
+		loadShape(shapeType);
 
 	mat4 mMatrix = identity<mat4>();
 	mat4 vMatrix = cam.view_matrix();
@@ -297,18 +301,19 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 	mat4 vMatrixInv = glm::inverse(vMatrix);
 	mat4 pMatrixInv = glm::inverse(pMatrix);
 
-	vec3 cameraPos   = cam.position;
+	vec3 cameraPos = cam.position;
 	float cameraNear = cam.nearplane;
-	float cameraFar  = cam.farplane;
+	float cameraFar = cam.farplane;
 
-	vec3 cameraUp      = cam.up();
-	vec3 cameraRight   = cam.right();
+	vec3 cameraUp = cam.up();
+	vec3 cameraRight = cam.right();
 	vec3 cameraForward = cam.forward();
 
-	if (outputSize != sceneColorTex.size()) createTextures(sceneColorTex.size());
+	if (outputSize != sceneColorTex.size())
+		createTextures(sceneColorTex.size());
 
-
-	if (quadTex.width == 0 || quadTex.height == 0) loadQuadTex();
+	if (quadTex.width == 0 || quadTex.height == 0)
+		loadQuadTex();
 
 	fbo.Bind();
 	fbo.EnableConsecutiveDrawbuffers(3, 0);
@@ -338,7 +343,7 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 
 	// Draw geometry
 	{
-		ProgramObject& program = (shapeType == SHAPE_TYPE::ST_POINTSPRITE) ? programGeometryPointSprite : programGeometry;
+		ProgramObject &program = (shapeType == SHAPE_TYPE::ST_POINTSPRITE) ? programGeometryPointSprite : programGeometry;
 
 		program.Use();
 		program.SetUniform("mvp", mvpMatrix);
@@ -367,7 +372,8 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 
 		size_t numElements = (shapeIndexBuffer.m_sizeInBytes / sizeof(GLushort));
 
-		if (shapeType == SHAPE_TYPE::ST_POINTSPRITE) {
+		if (shapeType == SHAPE_TYPE::ST_POINTSPRITE)
+		{
 			program.SetUniform("outputSize", outputSize);
 			positionsVAO.SetAttributeBufferSource(fluidPosition, 0, 3, GL_FLOAT, GL_FALSE);
 			positionsVAO.Bind();
@@ -375,7 +381,9 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 			glEnable(GL_POINT_SPRITE);
 			glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN, GL_LOWER_LEFT);
 			glDrawArrays(GL_POINTS, 0, GLsizei(numInstances));
-		} else {
+		}
+		else
+		{
 			bool viewAligned = (shapeType == SHAPE_TYPE::ST_QUAD);
 			program.SetUniform("viewAlign", viewAligned);
 			program.SetSSBO("InstanceInfo", fluidPosition, 0);
@@ -388,7 +396,7 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 	// Draw fluid back
 	if (o_cheapDensity || o_waterColor.w == 0.f)
 	{
-		ProgramObject& program = shapeType == SHAPE_TYPE::ST_POINTSPRITE ? programBackDepthPointSprite : programBackDepth;
+		ProgramObject &program = shapeType == SHAPE_TYPE::ST_POINTSPRITE ? programBackDepthPointSprite : programBackDepth;
 
 		program.Use();
 
@@ -417,7 +425,8 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 
 		size_t numElements = (quadIndexBuffer.m_sizeInBytes / sizeof(GLushort));
 
-		if (shapeType == SHAPE_TYPE::ST_POINTSPRITE) {
+		if (shapeType == SHAPE_TYPE::ST_POINTSPRITE)
+		{
 			program.SetUniform("outputSize", outputSize);
 			positionsVAO.SetAttributeBufferSource(fluidPosition, 0, 3, GL_FLOAT, GL_FALSE);
 			positionsVAO.Bind();
@@ -428,7 +437,8 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 			glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN, GL_LOWER_LEFT);
 			glDrawArrays(GL_POINTS, 0, GLsizei(numInstances));
 		}
-		else {
+		else
+		{
 			program.SetUniform("viewAlign", true);
 			program.SetSSBO("InstanceInfo", fluidPosition, 0);
 			quadVAO.Bind();
@@ -450,16 +460,17 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 		programDensityCheap.SetUniform("scale", o_size);
 		programDensityCheap.SetUniform("cameraNear", cameraNear);
 		programDensityCheap.SetUniform("cameraFar", cameraFar);
-		programDensityCheap.SetTexture("sceneDepthTex",      sceneDepthTex, 1, sampler);
-		programDensityCheap.SetTexture("fluidFrontDepthTex", depthTex,      2, sampler);
-		programDensityCheap.SetTexture("fluidBackDepthTex",  backDepthTex,  3, sampler);
+		programDensityCheap.SetTexture("sceneDepthTex", sceneDepthTex, 1, sampler);
+		programDensityCheap.SetTexture("fluidFrontDepthTex", depthTex, 2, sampler);
+		programDensityCheap.SetTexture("fluidBackDepthTex", backDepthTex, 3, sampler);
 		programDensityCheap.SetImageTexture(densityTex, 0, GL_WRITE_ONLY);
 
 		programDensityCheap.DispatchCompute(sceneColorTex.size(), ivec2(32, 32), true);
 		glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
-
-	} else {
-		ProgramObject& program = shapeType == SHAPE_TYPE::ST_POINTSPRITE ? programDensityPointSprite : programDensity;
+	}
+	else
+	{
+		ProgramObject &program = shapeType == SHAPE_TYPE::ST_POINTSPRITE ? programDensityPointSprite : programDensity;
 
 		program.Use();
 		program.SetUniform("mvp", mvpMatrix);
@@ -485,7 +496,8 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 
 		size_t numElements = (quadIndexBuffer.m_sizeInBytes / sizeof(GLushort));
 
-		if (shapeType == SHAPE_TYPE::ST_POINTSPRITE) {
+		if (shapeType == SHAPE_TYPE::ST_POINTSPRITE)
+		{
 			program.SetUniform("outputSize", sceneDepthTex.size());
 			positionsVAO.SetAttributeBufferSource(fluidPosition, 0, 3, GL_FLOAT, GL_FALSE);
 			positionsVAO.Bind();
@@ -495,7 +507,8 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 			glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN, GL_LOWER_LEFT);
 			glDrawArrays(GL_POINTS, 0, GLsizei(numInstances));
 		}
-		else {
+		else
+		{
 			program.SetUniform("viewAlign", true);
 			program.SetSSBO("InstanceInfo", fluidPosition, 0);
 			quadVAO.Bind();
@@ -508,7 +521,6 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 	fbo.Unbind();
 
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
-
 
 	// Bilateral filter on geometry (not used for now)
 	if (!o_useNormalTexFiltering)
@@ -573,9 +585,12 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 	sceneColorTex.generateMipmap();
 	sceneDepthTex.generateMipmap();
 
-	if (o_useNormalTexFiltering) {
+	if (o_useNormalTexFiltering)
+	{
 		normalBilateralAuxTex2.generateMipmap();
-	} else {
+	}
+	else
+	{
 		geometryBilateralAuxTex2.generateMipmap();
 	}
 
@@ -584,7 +599,7 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 	// Draw ss fluid
 	{
 		programSSFluid.SetImageTexture(sceneColorTex, 0, GL_WRITE_ONLY);
-		//programSSFluid.SetImageTexture(normalTex,    1, GL_WRITE_ONLY);
+		// programSSFluid.SetImageTexture(normalTex,    1, GL_WRITE_ONLY);
 
 		programSSFluid.SetTexture("sceneDepthTex", sceneDepthTex, 1, sampler);
 		programSSFluid.SetTexture("sceneColorTex", sceneColorTex, 2, sampler);
@@ -593,7 +608,7 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 		programSSFluid.SetTexture("geometryTex", geometryBilateralAuxTex2, 5, sampler);
 		programSSFluid.SetTexture("densityTex", densityTex, 6, sampler);
 		programSSFluid.SetTexture("backDepthTex", backDepthTex, 7, sampler);
-		programSSFluid.SetTexture("envTex",     envTex, 9, sampler);
+		programSSFluid.SetTexture("envTex", envTex, 9, sampler);
 		programSSFluid.SetTexture("envCubeTex", envCubeTex, 10, sampler);
 
 		programSSFluid.SetUniform("cameraPos", cameraPos);
@@ -632,7 +647,7 @@ void ScreenSpaceFluid::Render(CameraFPS& cam)
 	check_opengl();
 }
 
-ScreenSpaceFluid::GUI::GUI(ScreenSpaceFluid* ssf)
+ScreenSpaceFluid::GUI::GUI(ScreenSpaceFluid *ssf)
 {
 	ssfptr = ssf;
 	visible = true;
@@ -643,60 +658,117 @@ ScreenSpaceFluid::GUI::~GUI()
 {
 }
 
-void ScreenSpaceFluid::GUI::draw(GLFWwindow* window, int order)
+void ScreenSpaceFluid::GUI::draw(GLFWwindow *window, int order)
 {
-	if (!ssfptr) return;
+	if (!ssfptr)
+		return;
 
 	ImVec2 outerSize = ImGui::GetItemRectSize();
 
 	bool dirty = false;
 
 #if 1
-	if (ImGui::ColorEdit3("Fluid color", value_ptr(ssfptr->o_waterColor))) {}
+	if (ImGui::ColorEdit3("Fluid color", value_ptr(ssfptr->o_waterColor)))
+	{
+	}
 
 	float murkiness = ssfptr->o_waterColor.w * 100;
-	if (ImGui::DragFloat("Fluid murkiness", &murkiness, 0.01f, 0.f, 1.f)) {}
+	if (ImGui::DragFloat("Fluid murkiness", &murkiness, 0.01f, 0.f, 1.f))
+	{
+	}
 	ssfptr->o_waterColor.w = murkiness / 100;
 
 	float particle_size = ssfptr->o_size * 5;
-	if (ImGui::DragFloat("Particle size", &particle_size, 0.01f, 0.1f, 1.f)) {}
+	if (ImGui::DragFloat("Particle size", &particle_size, 0.01f, 0.1f, 1.f))
+	{
+	}
 	ssfptr->o_size = particle_size / 5;
 	ssfptr->o_densityThreshold = 0.4 + 0.6 * particle_size;
 
 	int smoothness = ssfptr->o_filterSize - 4;
-	if (ImGui::SliderInt("Smoothness", &smoothness, 0, 4)) {}
+	if (ImGui::SliderInt("Smoothness", &smoothness, 0, 4))
+	{
+	}
 	ssfptr->o_filterSize = smoothness + 4;
 
-	if (ImGui::Checkbox("Disable rendering", &ssfptr->o_bypass)) {}
+	if (ImGui::Checkbox("Disable rendering", &ssfptr->o_bypass))
+	{
+	}
 
-	if (ImGui::Checkbox("Low quality (faster)", &ssfptr->o_cheapDensity)) {}
+	if (ImGui::Checkbox("Low quality (faster)", &ssfptr->o_cheapDensity))
+	{
+	}
 
-    if (ImGui::DragFloat("Refraction index", &ssfptr->o_refractionIndex, 0.001f, 0.f, 2.f)) {}
-    
+	if (ImGui::DragFloat("Refraction index", &ssfptr->o_refractionIndex, 0.001f, 0.f, 2.f))
+	{
+	}
 
 #else
-    if (ImGui::Checkbox("Enable screen space reflecions/refractions", &ssfptr->o_enableSSRef)) {}
-	if (ImGui::Button("Reload shaders")) { ssfptr->dirtyShaders = true; }
-	if (ImGui::ColorEdit3("Fluid color", value_ptr(ssfptr->o_waterColor)) ) {}
-	if (ImGui::DragFloat("Fluid murkiness", &ssfptr->o_waterColor.w, 0.001f, 0.f, 1.f)) {}
-	if (ImGui::DragFloat("Flat color mix", &ssfptr->o_flatColorMix, 0.001f, 0.f, 1.f)) {}
-	if (ImGui::DragFloat("Particle size", &ssfptr->o_size, 0.001f, 0.0f, 1.f)) {}
-	if (ImGui::SliderInt("Bilateral filter size", &ssfptr->o_filterSize, 0, 15)) {}
-	if (ImGui::DragFloat("Filter position weight", &ssfptr->o_filterWeightPos, 0.001f, 0.f, 3.f)) {}
-	if (ImGui::DragFloat("Filter normal weight", &ssfptr->o_filterWeightNor, 0.001f, 0.f, 3.f)) {}
-	if (ImGui::DragFloat("Normal smoothing", &ssfptr->o_normalSmooth, 0.001f, 0.f, 3.f)) {}
-	if (ImGui::DragFloat("Refraction index", &ssfptr->o_refractionIndex, 0.001f, 0.f, 2.f)) {}
-	if (ImGui::Checkbox("Enable screen space reflecions/refractions", &ssfptr->o_enableSSRef)) {}
-	if (ImGui::DragFloat("Refraction multiplier", &ssfptr->o_reflectionMult, 0.01f, 0.f, 10.f)) {}
-	if (ImGui::DragFloat("Refraction gamma", &ssfptr->o_reflectionGamma, 0.01f, 0.f, 10.f)) {}
-	if (ImGui::DragFloat("Reflection multiplier", &ssfptr->o_refractionMult, 0.01f, 0.f, 10.f)) {}
-	if (ImGui::DragFloat("Reflection gamma", &ssfptr->o_refractionGamma, 0.01f, 0.f, 10.f)) {}
-	if (ImGui::DragFloat("Density threshold", &ssfptr->o_densityThreshold, 0.01f, 0.f, 5.f)) {}
-	if (ImGui::Checkbox("Disable rendering", &ssfptr->o_bypass)) {}
-	if (ImGui::Checkbox("Use normal filtering (old)", &ssfptr->o_useNormalTexFiltering)) {}
-	if (ImGui::Checkbox("Use cheap density estimate", &ssfptr->o_cheapDensity)) {}
-	if (ImGui::Checkbox("FXAA", &ssfptr->o_fxaa)) {}
-	
+	if (ImGui::Checkbox("Enable screen space reflecions/refractions", &ssfptr->o_enableSSRef))
+	{
+	}
+	if (ImGui::Button("Reload shaders"))
+	{
+		ssfptr->dirtyShaders = true;
+	}
+	if (ImGui::ColorEdit3("Fluid color", value_ptr(ssfptr->o_waterColor)))
+	{
+	}
+	if (ImGui::DragFloat("Fluid murkiness", &ssfptr->o_waterColor.w, 0.001f, 0.f, 1.f))
+	{
+	}
+	if (ImGui::DragFloat("Flat color mix", &ssfptr->o_flatColorMix, 0.001f, 0.f, 1.f))
+	{
+	}
+	if (ImGui::DragFloat("Particle size", &ssfptr->o_size, 0.001f, 0.0f, 1.f))
+	{
+	}
+	if (ImGui::SliderInt("Bilateral filter size", &ssfptr->o_filterSize, 0, 15))
+	{
+	}
+	if (ImGui::DragFloat("Filter position weight", &ssfptr->o_filterWeightPos, 0.001f, 0.f, 3.f))
+	{
+	}
+	if (ImGui::DragFloat("Filter normal weight", &ssfptr->o_filterWeightNor, 0.001f, 0.f, 3.f))
+	{
+	}
+	if (ImGui::DragFloat("Normal smoothing", &ssfptr->o_normalSmooth, 0.001f, 0.f, 3.f))
+	{
+	}
+	if (ImGui::DragFloat("Refraction index", &ssfptr->o_refractionIndex, 0.001f, 0.f, 2.f))
+	{
+	}
+	if (ImGui::Checkbox("Enable screen space reflecions/refractions", &ssfptr->o_enableSSRef))
+	{
+	}
+	if (ImGui::DragFloat("Refraction multiplier", &ssfptr->o_reflectionMult, 0.01f, 0.f, 10.f))
+	{
+	}
+	if (ImGui::DragFloat("Refraction gamma", &ssfptr->o_reflectionGamma, 0.01f, 0.f, 10.f))
+	{
+	}
+	if (ImGui::DragFloat("Reflection multiplier", &ssfptr->o_refractionMult, 0.01f, 0.f, 10.f))
+	{
+	}
+	if (ImGui::DragFloat("Reflection gamma", &ssfptr->o_refractionGamma, 0.01f, 0.f, 10.f))
+	{
+	}
+	if (ImGui::DragFloat("Density threshold", &ssfptr->o_densityThreshold, 0.01f, 0.f, 5.f))
+	{
+	}
+	if (ImGui::Checkbox("Disable rendering", &ssfptr->o_bypass))
+	{
+	}
+	if (ImGui::Checkbox("Use normal filtering (old)", &ssfptr->o_useNormalTexFiltering))
+	{
+	}
+	if (ImGui::Checkbox("Use cheap density estimate", &ssfptr->o_cheapDensity))
+	{
+	}
+	if (ImGui::Checkbox("FXAA", &ssfptr->o_fxaa))
+	{
+	}
+
 	bool select;
 	std::string typeStr;
 
@@ -716,14 +788,29 @@ void ScreenSpaceFluid::GUI::draw(GLFWwindow* window, int order)
 		break;
 	}
 
-	if (ImGui::BeginCombo("Particle type", typeStr.c_str())) {
-		if (ImGui::Selectable("Sphere", &select))       { ssfptr->shapeType = SHAPE_TYPE::ST_SPHERE; ssfptr->dirtyShape = true; }
-		if (ImGui::Selectable("Cube", &select))         { ssfptr->shapeType = SHAPE_TYPE::ST_CUBE; ssfptr->dirtyShape = true; }
-		if (ImGui::Selectable("Quad", &select))         { ssfptr->shapeType = SHAPE_TYPE::ST_QUAD; ssfptr->dirtyShape = true; }
-		if (ImGui::Selectable("Point sprite", &select)) { ssfptr->shapeType = SHAPE_TYPE::ST_POINTSPRITE; ssfptr->dirtyShape = true; }
+	if (ImGui::BeginCombo("Particle type", typeStr.c_str()))
+	{
+		if (ImGui::Selectable("Sphere", &select))
+		{
+			ssfptr->shapeType = SHAPE_TYPE::ST_SPHERE;
+			ssfptr->dirtyShape = true;
+		}
+		if (ImGui::Selectable("Cube", &select))
+		{
+			ssfptr->shapeType = SHAPE_TYPE::ST_CUBE;
+			ssfptr->dirtyShape = true;
+		}
+		if (ImGui::Selectable("Quad", &select))
+		{
+			ssfptr->shapeType = SHAPE_TYPE::ST_QUAD;
+			ssfptr->dirtyShape = true;
+		}
+		if (ImGui::Selectable("Point sprite", &select))
+		{
+			ssfptr->shapeType = SHAPE_TYPE::ST_POINTSPRITE;
+			ssfptr->dirtyShape = true;
+		}
 		ImGui::EndCombo();
 	}
 #endif
-
 }
-

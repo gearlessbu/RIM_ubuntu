@@ -24,7 +24,7 @@ include_directories("${RIM_ROOT}/external/eigen-3.2.10/")
 include_directories("${RIM_ROOT}/external/glm-0.9.9.2/")
 include_directories("${RIM_ROOT}/external/imgui-1.65/")
 include_directories("${RIM_ROOT}/external/json/")
-include_directories("${RIM_ROOT}/external/meshoptimizer/")
+include_directories("${RIM_ROOT}/external/meshoptimizer/src/")
 include_directories("${RIM_ROOT}/external/tinyobjloader/")
 
 enable_language("CUDA")

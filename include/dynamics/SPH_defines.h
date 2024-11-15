@@ -29,7 +29,13 @@ SOFTWARE.
 #define PI_D 3.1415926535897932384626433832795028841971693993751058209749445923078164062
 
 #define SPH_NUM_THREADS 8
-#define SPH_PARALLEL_FOR __pragma(omp parallel for num_threads(SPH_NUM_THREADS)) 
+// #define SPH_PARALLEL_FOR __pragma(omp parallel for num_threads(SPH_NUM_THREADS))
+#ifdef _MSC_VER // Check if using Microsoft Visual Studio
+#define SPH_PARALLEL_FOR __pragma(omp parallel for num_threads(SPH_NUM_THREADS))
+#else // For GCC and Clang
+// #define SPH_PARALLEL_FOR _Pragma("omp parallel for")
+#define SPH_PARALLEL_FOR _Pragma("omp parallel for num_threads(SPH_NUM_THREADS)")
+#endif
 
 // Number of maximal neighbours of a particle. If more particles reside in a particle's kernel support sphere, a "random" selection will be ignored.
 #define SPH_NUM_MAX_NEIGHBOURS 70
@@ -44,9 +50,9 @@ SOFTWARE.
 #define SPH_MINIMAL_REST_DENSITY 1e-11
 // Maximum number of iterations in the gradient descent steps for the pressure projcection constraints
 #define SPH_PROJECTION_MAX_ITER 10
-// Use this define if you want to use the original pressure projections. 
+// Use this define if you want to use the original pressure projections.
 // Assumes that average particle spacing is exactly one half of the kernel support size.
-//#define SPH_SIMPLE_PROJECTION
+// #define SPH_SIMPLE_PROJECTION
 // Maximum number of boundary particles
 #define SPH_NUM_MAX_BD_NEIGHBOURS 25
 // This defines whether boundaries are enforced in a hard manner

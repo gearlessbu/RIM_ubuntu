@@ -27,7 +27,6 @@ HighResClock::time_point HighResClock::now()
 }
 #endif
 
-
 void Timer::start()
 {
 #if RECORD_GL
@@ -66,7 +65,6 @@ void Timer::start()
 	///////////////////////////////////////////////////////////////////////////
 
 	m_clock_start = HighResClock::now();
-
 }
 
 void Timer::stop()
@@ -81,15 +79,14 @@ void Timer::stop()
 	// Record CUDA end time
 	///////////////////////////////////////////////////////////////////////////
 	cudaEventRecord(m_cuda_end_event, 0);
-#endif 
+#endif
 
 #if RECORD_GL
 	///////////////////////////////////////////////////////////////////////////
 	// Record OpenGL end time
 	///////////////////////////////////////////////////////////////////////////
 	glQueryCounter(m_gl_end_query, GL_TIMESTAMP);
-#endif 
-
+#endif
 }
 
 int Timer::resolveTiming()
@@ -102,11 +99,11 @@ int Timer::resolveTiming()
 	uint64_t glstart_avail, glend_avail;
 	glGetQueryObjectui64v(m_gl_start_query, GL_QUERY_RESULT_AVAILABLE, &glstart_avail);
 	glGetQueryObjectui64v(m_gl_end_query, GL_QUERY_RESULT_AVAILABLE, &glend_avail);
-	if (glstart_avail == GL_FALSE || glend_avail == GL_FALSE) return 1;
+	if (glstart_avail == GL_FALSE || glend_avail == GL_FALSE)
+		return 1;
 	check_opengl();
 
 #endif
-
 
 #if RECORD_CUDA
 	///////////////////////////////////////////////////////////////////////////
@@ -115,8 +112,9 @@ int Timer::resolveTiming()
 	cudaError_t custart_res, cuend_res;
 	custart_res = cudaEventQuery(m_cuda_start_event);
 	cuend_res = cudaEventQuery(m_cuda_end_event);
-	if (custart_res == cudaErrorNotReady || cuend_res == cudaErrorNotReady) return -1;
-#endif 
+	if (custart_res == cudaErrorNotReady || cuend_res == cudaErrorNotReady)
+		return -1;
+#endif
 
 #if RECORD_GL
 	///////////////////////////////////////////////////////////////////////////
@@ -130,7 +128,7 @@ int Timer::resolveTiming()
 	glDeleteQueries(1, &m_gl_end_query);
 	check_opengl();
 
-#endif 
+#endif
 
 #if RECORD_CUDA
 	///////////////////////////////////////////////////////////////////////////
@@ -139,15 +137,13 @@ int Timer::resolveTiming()
 	cudaEventElapsedTime(&m_cuda_time_elapsed, m_cuda_start_event, m_cuda_end_event);
 	cudaEventDestroy(m_cuda_start_event);
 	cudaEventDestroy(m_cuda_end_event);
-#endif 
+#endif
 
 	std::chrono::duration<double, std::milli> duration = m_clock_end - m_clock_start;
 	m_cpu_time_elapsed = float(duration.count());
 
 	return 0;
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Query CPU's frequency ONCE
@@ -156,34 +152,33 @@ ScopeTimer::ScopeTimer(const std::string &name, bool enable)
 {
 	m_enabled = enable;
 
-	if (!m_enabled) return;
+	if (!m_enabled)
+		return;
 
 	t.name = name;
 
-	if (TimingManager::instance().timingEnabled()) t.start();
-
+	if (TimingManager::instance().timingEnabled())
+		t.start();
 };
 
 ScopeTimer::~ScopeTimer()
 {
-	if (!m_enabled) return;
+	if (!m_enabled)
+		return;
 
-	if (TimingManager::instance().timingEnabled()) t.stop();
+	if (TimingManager::instance().timingEnabled())
+		t.stop();
 
 	///////////////////////////////////////////////////////////////////////////
 	// Register into PerformanceProfiler
 	///////////////////////////////////////////////////////////////////////////
 	TimingManager::instance().registerScope(t);
-
 };
 
-
-
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-
 
 TimingManagerInstance::TimingManagerInstance()
 {
@@ -193,21 +188,18 @@ TimingManagerInstance::~TimingManagerInstance()
 {
 }
 
-bool
-TimingManagerInstance::timingEnabled()
+bool TimingManagerInstance::timingEnabled()
 {
 	return true;
 }
 
-void
-TimingManagerInstance::reset()
+void TimingManagerInstance::reset()
 {
 	scopeStats.clear();
 	scopeList.clear();
 }
 
-void
-TimingManagerInstance::registerScope(const Timer &scope)
+void TimingManagerInstance::registerScope(const Timer &scope)
 {
 	outstandingTimings.push_back(scope);
 }
@@ -217,9 +209,10 @@ void TimingManagerInstance::endFrame()
 
 	std::vector<std::list<Timer>::iterator> deleteList;
 
-	for (auto& it = outstandingTimings.begin(); it != outstandingTimings.end(); ++it)
+	for (auto it = outstandingTimings.begin(); it != outstandingTimings.end(); ++it)
 	{
-		if (it->resolveTiming()) continue;
+		if (it->resolveTiming())
+			continue;
 
 		scopeStats[it->name].cpu_time = it->m_cpu_time_elapsed;
 
@@ -234,18 +227,16 @@ void TimingManagerInstance::endFrame()
 		deleteList.push_back(it);
 	}
 
-	for (auto& it : deleteList) outstandingTimings.erase(it);
-
+	for (auto &it : deleteList)
+		outstandingTimings.erase(it);
 }
 
-
-TimingStats 
+TimingStats
 TimingManagerInstance::getTimingStats(std::string name)
 {
-	auto& stats = scopeStats.find(name);
+	auto stats = scopeStats.find(name);
 	if (stats == scopeStats.end())
 		return TimingStats();
 
 	return stats->second;
 }
-
