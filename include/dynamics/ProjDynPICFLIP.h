@@ -31,7 +31,7 @@ SOFTWARE.
 #include "ProjDynTypeDef.h"
 #include "cublas_v2.h"
 #include <cuda_runtime.h>
-#include "CudaSafeCall.h"
+#include "cuda/CudaSafeCall.h"
 #include "StopWatch.h"
 #ifndef __gl_h_
 #ifndef __GL_H_

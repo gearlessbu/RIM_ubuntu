@@ -24,18 +24,38 @@ struct MaterialStructGL
 	glm::uvec2 sheen_texhandle;
 	glm::uvec2 specular_highlight_texhandle;
 
-	union { glm::vec3 ambient;       GLfloat _pad0[4]; };
-	union { glm::vec3 diffuse;       GLfloat _pad1[4]; };
-	union { glm::vec3 specular;      GLfloat _pad2[4]; };
-	union { glm::vec3 transmittance; GLfloat _pad3[4]; };
-	union { glm::vec3 emission;      GLfloat _pad4[3]; };
+	union
+	{
+		glm::vec3 ambient;
+		GLfloat _pad0[4];
+	};
+	union
+	{
+		glm::vec3 diffuse;
+		GLfloat _pad1[4];
+	};
+	union
+	{
+		glm::vec3 specular;
+		GLfloat _pad2[4];
+	};
+	union
+	{
+		glm::vec3 transmittance;
+		GLfloat _pad3[4];
+	};
+	union
+	{
+		glm::vec3 emission;
+		GLfloat _pad4[3];
+	};
 
-	GLfloat     shininess;
+	GLfloat shininess;
 
 	// pbr
-	GLfloat roughness;            // [0, 1] default 0
-	GLfloat metallic;             // [0, 1] default 0
-	GLfloat sheen;                // [0, 1] default 0
+	GLfloat roughness; // [0, 1] default 0
+	GLfloat metallic;  // [0, 1] default 0
+	GLfloat sheen;	   // [0, 1] default 0
 	GLfloat _pad5;
 };
 
@@ -61,10 +81,10 @@ struct Material
 
 struct MaterialData
 {
-	GLHelpers::BufferObject  materialListBuffer;
-	std::vector<Material>    materials;
+	GLHelpers::BufferObject materialListBuffer;
+	std::vector<Material> materials;
 
-	int  updateGLResources();
+	int updateGLResources();
 	void clearGLResources();
 	void setDirty();
 
@@ -85,15 +105,15 @@ struct Submesh
 struct MeshDataGL
 {
 	GLHelpers::VertexArrayObject vao;
-	GLHelpers::BufferObject      posbuffer;
-	GLHelpers::BufferObject      normalbuffer;
-	GLHelpers::BufferObject      texcoordbuffer;
-	GLHelpers::BufferObject      tangentbuffer;
-	GLHelpers::BufferObject      colorbuffer;
-	GLHelpers::BufferObject      matidbuffer;
+	GLHelpers::BufferObject posbuffer;
+	GLHelpers::BufferObject normalbuffer;
+	GLHelpers::BufferObject texcoordbuffer;
+	GLHelpers::BufferObject tangentbuffer;
+	GLHelpers::BufferObject colorbuffer;
+	GLHelpers::BufferObject matidbuffer;
 
-	GLHelpers::BufferObject      indexbuffer;
-	GLenum                       indexbuffertype; // GL_UNSIGNED_SHORT or GL_UNSIGNED_INT
+	GLHelpers::BufferObject indexbuffer;
+	GLenum indexbuffertype; // GL_UNSIGNED_SHORT or GL_UNSIGNED_INT
 };
 
 struct MeshData
@@ -103,30 +123,26 @@ struct MeshData
 	std::vector<glm::vec2> texcoords;
 	std::vector<glm::vec4> tangents;
 	std::vector<glm::vec3> colors;
-	std::vector<GLshort>   matIds;
-	std::vector<GLuint>    indices;
-	std::vector<Submesh>   submeshes;
+	std::vector<GLshort> matIds;
+	std::vector<GLuint> indices;
+	std::vector<Submesh> submeshes;
 
 	MeshDataGL gl;
 
-	MaterialData           materialdata;
-		
+	MaterialData materialdata;
+
 	// scale : final size of largest side of bbox of mesh file (if <= 0, keep original)
-	int  load_obj(std::string filename, float scale = 0.f, bool optimize = true);
+	int load_obj(std::string filename, float scale = 0.f, bool optimize = true);
 
 	void clear();
 	void clearCPU();
 	void clearGPU();
 
-	float     original_scale;
-	bbox3     bbox;
-
+	float original_scale;
+	bbox3 bbox;
 
 	void makeGLTexturesResident();
 	void makeGLTexturesNotResident();
 
 private:
-
 };
-
-

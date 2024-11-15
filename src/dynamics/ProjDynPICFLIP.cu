@@ -462,6 +462,7 @@ void PDPICFLIP::setGLBuffer(GLuint glBufferID, bool showMeshParticles, GLuint gl
         cudaGraphicsResource_t cres;
         cudaGraphicsGLRegisterBuffer(&cres, m_glColorBufferId, cudaGraphicsRegisterFlagsNone);
         cudaGraphicsMapResources(1, &cres, 0);
+        printf("jinitaimei!!!!!!!!!!!!!!!!!!!!!!\n");
         size_t csize;
         cudaGraphicsResourceGetMappedPointer((void **)&m_glColorArrayPtr, &csize, cres);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

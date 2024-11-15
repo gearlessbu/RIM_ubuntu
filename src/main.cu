@@ -3,7 +3,7 @@
 #include "helpers/CameraFPS.h"
 #include "helpers/OpenGLProgramObject.h"
 #include "helpers/OpenGLTextureObject.h"
-#include "helpers/OpenGLFramebufferObject.h"
+#include "helpers/OpenGLFrameBufferObject.h"
 #include "helpers/OpenGLVertexNameRenderer.h"
 #include "helpers/MeshData.h"
 #include "helpers/LightData.h"
@@ -25,7 +25,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
-#include <freeimage.h>
+// #include <freeimage.h>
+#include <FreeImage.h>
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #include <iostream>
@@ -34,24 +36,28 @@
 
 #include "dynamics/ProjDynTypeDef.h"
 #include "dynamics/ProjDynSimulator.h"
-//#include "main.h"
+// #include "main.h"
 
 using namespace glm;
 
-int loadFluidPositions(const std::string& filename, std::vector<vec3>& positions)
+int loadFluidPositions(const std::string &filename, std::vector<vec3> &positions)
 {
 	positions.clear();
 
 	std::ifstream ifile;
 	ifile.open(filename, std::ios::binary);
-	if (!ifile.is_open()) return ERROR_FILE_NOT_FOUND;
+	if (!ifile.is_open())
+		return ERROR_FILE_NOT_FOUND;
 
-	ifile.seekg(0, std::ios::end); size_t sz = size_t(ifile.tellg()); ifile.seekg(0, std::ios::beg);
+	ifile.seekg(0, std::ios::end);
+	size_t sz = size_t(ifile.tellg());
+	ifile.seekg(0, std::ios::beg);
 
-	if (sz == 0) return ERROR_LOADING_RESOURCE;
-	
-	positions.resize(sz / sizeof(vec3) );
-	ifile.read((char*)(positions.data()), sz);
+	if (sz == 0)
+		return ERROR_LOADING_RESOURCE;
+
+	positions.resize(sz / sizeof(vec3));
+	ifile.read((char *)(positions.data()), sz);
 	ifile.close();
 
 	return SUCCESS;
@@ -62,13 +68,13 @@ bool full_screen = false;
 
 RenderStats renderstats;
 
-int window_width  = 1280;
+int window_width = 1280;
 int window_height = 720;
 
 GLHelpers::ProgramObject render_program, background_program, depth_program;
 
 GLHelpers::FramebufferObject fbo;
-GLHelpers::TextureObject2D   depthtex, colortex;
+GLHelpers::TextureObject2D depthtex, colortex;
 
 CameraFPS camera, prev_camera;
 vec3 camera_speed(0.f, 0.f, 0.f);
@@ -79,7 +85,7 @@ OpenGLVertexNameRenderer name_renderer;
 
 using namespace GLHelpers;
 
-ProjDynSimulator* sim = NULL;
+ProjDynSimulator *sim = NULL;
 
 std::vector<unsigned int> grippedVerts;
 bool gripping = false;
@@ -89,13 +95,15 @@ PDPositions grippos;
 
 void resize_textures(GLint width, GLint height)
 {
-	if (depthtex.width != width || depthtex.height != height || depthtex.internalFormat != GL_DEPTH_COMPONENT32F) {
+	if (depthtex.width != width || depthtex.height != height || depthtex.internalFormat != GL_DEPTH_COMPONENT32F)
+	{
 		depthtex.create(ivec2(window_width, window_height), GL_DEPTH_COMPONENT32F, nullptr, true);
 		depthtex.setParameter(GL_TEXTURE_COMPARE_MODE, GL_NONE);
 		depthtex.setWrapMethod(GL_CLAMP_TO_EDGE);
 	}
 
-	if (colortex.width != width || colortex.height != height || colortex.internalFormat != GL_RGBA16F) {
+	if (colortex.width != width || colortex.height != height || colortex.internalFormat != GL_RGBA16F)
+	{
 		colortex.create(glm::ivec2(width, height), GL_RGBA16F, nullptr, true);
 		colortex.setWrapMethod(GL_CLAMP_TO_EDGE);
 	}
@@ -103,7 +111,7 @@ void resize_textures(GLint width, GLint height)
 	name_renderer.setup(size2D(width, height));
 }
 
-static void resize_callback(GLFWwindow* window, int width, int height)
+static void resize_callback(GLFWwindow *window, int width, int height)
 {
 	window_width = width;
 	window_height = height;
@@ -115,54 +123,68 @@ static void resize_callback(GLFWwindow* window, int width, int height)
 
 static void camera_key_callback(int key, int scancode, int action, int mods)
 {
-	if (action != GLFW_PRESS && action != GLFW_RELEASE) return;
+	if (action != GLFW_PRESS && action != GLFW_RELEASE)
+		return;
 
-	if (key == GLFW_KEY_W) camera_speed.z = action == GLFW_PRESS ?  1.0f : 0.0f;
-	if (key == GLFW_KEY_S) camera_speed.z = action == GLFW_PRESS ? -1.0f : 0.0f;
-	if (key == GLFW_KEY_D) camera_speed.x = action == GLFW_PRESS ?  1.0f : 0.0f;
-	if (key == GLFW_KEY_A) camera_speed.x = action == GLFW_PRESS ? -1.0f : 0.0f;
-	if (key == GLFW_KEY_E) camera_speed.y = action == GLFW_PRESS ?  1.0f : 0.0f;
-	if (key == GLFW_KEY_Q) camera_speed.y = action == GLFW_PRESS ? -1.0f : 0.0f;
-
+	if (key == GLFW_KEY_W)
+		camera_speed.z = action == GLFW_PRESS ? 1.0f : 0.0f;
+	if (key == GLFW_KEY_S)
+		camera_speed.z = action == GLFW_PRESS ? -1.0f : 0.0f;
+	if (key == GLFW_KEY_D)
+		camera_speed.x = action == GLFW_PRESS ? 1.0f : 0.0f;
+	if (key == GLFW_KEY_A)
+		camera_speed.x = action == GLFW_PRESS ? -1.0f : 0.0f;
+	if (key == GLFW_KEY_E)
+		camera_speed.y = action == GLFW_PRESS ? 1.0f : 0.0f;
+	if (key == GLFW_KEY_Q)
+		camera_speed.y = action == GLFW_PRESS ? -1.0f : 0.0f;
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 
-	if (key == GLFW_KEY_F) {
-		if (action == GLFW_PRESS) cursor_lock = !cursor_lock;
-		
-		if (cursor_lock) {
+	if (key == GLFW_KEY_F)
+	{
+		if (action == GLFW_PRESS)
+			cursor_lock = !cursor_lock;
+
+		if (cursor_lock)
+		{
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN | GLFW_CURSOR_DISABLED);
-			glfwSetCursorPos(window, window_width/2.0, window_height/2.0);
-		} else {
+			glfwSetCursorPos(window, window_width / 2.0, window_height / 2.0);
+		}
+		else
+		{
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}
 	}
 
-	if (key == GLFW_KEY_M && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_M && action == GLFW_PRESS)
+	{
 		display_gui = !display_gui;
 	}
 
 	camera_key_callback(key, scancode, action, mods);
-} 
+}
 
-int mouseX = -1, mouseY = -1, selectionRadius=25;
-static void cursor_callback(GLFWwindow* window, double xpos, double ypos)
+int mouseX = -1, mouseY = -1, selectionRadius = 25;
+static void cursor_callback(GLFWwindow *window, double xpos, double ypos)
 {
-	double half_width  = window_width  / 2.0;
+	double half_width = window_width / 2.0;
 	double half_height = window_height / 2.0;
 
 	mouseX = xpos;
 	mouseY = window_height - ypos;
 
-	if (!cursor_lock) {
-		if (gripping) {
-			//printf("Moving grip \n");
+	if (!cursor_lock)
+	{
+		if (gripping)
+		{
+			// printf("Moving grip \n");
 			mat4 camtrans = camera.proj_matrix() *
-				camera.view_matrix();
+							camera.view_matrix();
 			mat4 p = glm::inverse(camtrans);
 
 			vec4 newScreenCenter = gripScreenCenter;
@@ -172,20 +194,23 @@ static void cursor_callback(GLFWwindow* window, double xpos, double ypos)
 			newScreenCenter = p * newScreenCenter;
 
 			vec3 trans(newScreenCenter.x - gripWorldCenter.x,
-				newScreenCenter.y - gripWorldCenter.y,
-				newScreenCenter.z - gripWorldCenter.z);
+					   newScreenCenter.y - gripWorldCenter.y,
+					   newScreenCenter.z - gripWorldCenter.z);
 			PD3dVector transEigen(trans.x, trans.y, trans.z);
 
 			PDPositions newPos(grippos.rows(), 3);
-			for (unsigned int v = 0; v < grippos.rows(); v++) {
+			for (unsigned int v = 0; v < grippos.rows(); v++)
+			{
 				newPos.row(v) = grippos.row(v) + transEigen.transpose();
 			}
 			sim->setGrip(grippedVerts, newPos);
 		}
 	}
-	else {
+	else
+	{
 		// First person camera mouse movement
-		if (xpos == half_width && ypos == half_height) return;
+		if (xpos == half_width && ypos == half_height)
+			return;
 
 		camera_rotational_speed = vec2(float(xpos - half_width), float(ypos - half_height));
 		glfwSetCursorPos(window, half_width, half_height);
@@ -194,33 +219,42 @@ static void cursor_callback(GLFWwindow* window, double xpos, double ypos)
 	return;
 }
 
-static void click_callback(GLFWwindow* window, int button, int action, int mods) {
-	//printf("Mouse button event \n");
-	// Do nothing in first person mode
-	if (cursor_lock) return;
+static void click_callback(GLFWwindow *window, int button, int action, int mods)
+{
+	// printf("Mouse button event \n");
+	//  Do nothing in first person mode
+	if (cursor_lock)
+		return;
 
 	// Do nothing if simulator is not set
-	if (sim == NULL) return;
+	if (sim == NULL)
+		return;
 
-	if (action == GLFW_PRESS) {
-		//printf("Gripping initial \n");
-		if (gripping) {
-			//printf("unexpected release \n");
+	if (action == GLFW_PRESS)
+	{
+		// printf("Gripping initial \n");
+		if (gripping)
+		{
+			// printf("unexpected release \n");
 			sim->releaseGrip();
 			gripping = false;
 		}
-		if (mouseX >= 0 && mouseY >= 0 && mouseX <= window_width && mouseY <= window_height) {
+		if (mouseX >= 0 && mouseY >= 0 && mouseX <= window_width && mouseY <= window_height)
+		{
 			// Check for vertices below mouse
-			float* namebuffer = new float[selectionRadius*selectionRadius * 4];
-			for (int i = 0; i < selectionRadius*selectionRadius * 4; i++) namebuffer[i] = -1;
+			float *namebuffer = new float[selectionRadius * selectionRadius * 4];
+			for (int i = 0; i < selectionRadius * selectionRadius * 4; i++)
+				namebuffer[i] = -1;
 			glGetTextureSubImage(name_renderer.nametex.m_uiOpenGLID, 0,
-				std::max(0, mouseX - selectionRadius), std::max(0, mouseY - selectionRadius), 0,
-				std::min(window_width - mouseX - 1, selectionRadius * 2), std::min(window_height - mouseY - 1, selectionRadius * 2), 1,
-				name_renderer.nametex.dataFormat, name_renderer.nametex.dataType, selectionRadius * selectionRadius * 4 * sizeof(float), namebuffer);
+								 std::max(0, mouseX - selectionRadius), std::max(0, mouseY - selectionRadius), 0,
+								 std::min(window_width - mouseX - 1, selectionRadius * 2), std::min(window_height - mouseY - 1, selectionRadius * 2), 1,
+								 name_renderer.nametex.dataFormat, name_renderer.nametex.dataType, selectionRadius * selectionRadius * 4 * sizeof(float), namebuffer);
 			GLenum err = glGetError();
 			String errCode = "";
-			if (err != GL_NO_ERROR) {
-				switch (err) {
+			if (err != GL_NO_ERROR)
+			{
+				switch (err)
+				{
 				case GL_INVALID_VALUE:
 					errCode = "GL_INVALID_VALUE";
 					break;
@@ -233,34 +267,41 @@ static void click_callback(GLFWwindow* window, int button, int action, int mods)
 				std::cout << "GL error on gettexturesubimage: " << errCode << std::endl;
 			}
 			grippedVerts.clear();
-			std::vector<unsigned int>& simVertices = sim->getUsedVertices();
-			for (int i = 0; i < selectionRadius*selectionRadius * 4; i++) {
-				if (namebuffer[i] >= 0) {
+			std::vector<unsigned int> &simVertices = sim->getUsedVertices();
+			for (int i = 0; i < selectionRadius * selectionRadius * 4; i++)
+			{
+				if (namebuffer[i] >= 0)
+				{
 					unsigned int v = (unsigned int)namebuffer[i];
-					if (std::find(grippedVerts.begin(), grippedVerts.end(), v) == grippedVerts.end()) {
-						if (std::find(simVertices.begin(), simVertices.end(), v) != simVertices.end()) {
+					if (std::find(grippedVerts.begin(), grippedVerts.end(), v) == grippedVerts.end())
+					{
+						if (std::find(simVertices.begin(), simVertices.end(), v) != simVertices.end())
+						{
 							grippedVerts.push_back(v);
 						}
 					}
 				}
 			}
-            std::sort(grippedVerts.begin(), grippedVerts.end());
-            grippedVerts.erase(std::unique(grippedVerts.begin(), grippedVerts.end()), grippedVerts.end());
+			std::sort(grippedVerts.begin(), grippedVerts.end());
+			grippedVerts.erase(std::unique(grippedVerts.begin(), grippedVerts.end()), grippedVerts.end());
 			// Determine world and screen space center of the grip (requires camera transform)
-			if (grippedVerts.size() > 0) {
+			if (grippedVerts.size() > 0)
+			{
 				mat4 camtrans = camera.proj_matrix() * camera.view_matrix();
-				PDPositions& curpos = sim->getPositions();
+				PDPositions &curpos = sim->getPositions();
 				grippos.setZero(grippedVerts.size(), 3);
 				gripWorldCenter = vec3(0, 0, 0);
 				gripScreenCenter = vec4(0, 0, 0, 0);
 
-                grippos.setZero(grippedVerts.size(), 3);
-                int ind = 0;
-                for (unsigned int v : grippedVerts) {
-                    grippos.row(ind) = curpos.row(v);
-                    ind++;
-                }
-				for (int i = 0; i < grippedVerts.size(); i++) {
+				grippos.setZero(grippedVerts.size(), 3);
+				int ind = 0;
+				for (unsigned int v : grippedVerts)
+				{
+					grippos.row(ind) = curpos.row(v);
+					ind++;
+				}
+				for (int i = 0; i < grippedVerts.size(); i++)
+				{
 					vec3 vp(grippos(i, 0), grippos(i, 1), grippos(i, 2));
 					gripWorldCenter += vp;
 					vec4 vpp(grippos(i, 0), grippos(i, 1), grippos(i, 2), 1);
@@ -270,21 +311,23 @@ static void click_callback(GLFWwindow* window, int button, int action, int mods)
 				gripScreenCenter /= (float)grippedVerts.size();
 				// Set grip in simulator
 				sim->setGripType(false);
-                sim->setGrip(grippedVerts, grippos);
+				sim->setGrip(grippedVerts, grippos);
 				gripping = true;
 			}
 		}
 	}
-	else {
-		//printf("Releasing grip \n");
-		if (gripping) {
+	else
+	{
+		// printf("Releasing grip \n");
+		if (gripping)
+		{
 			sim->releaseGrip();
 			gripping = false;
 		}
 	}
 };
 
-void setup_program(ProgramObject& program, std::string vertex_filename, std::string fragment_filename = std::string(), std::string geometry_filename = std::string())
+void setup_program(ProgramObject &program, std::string vertex_filename, std::string fragment_filename = std::string(), std::string geometry_filename = std::string())
 {
 
 	ProgramObject::ShaderPaths p;
@@ -294,19 +337,23 @@ void setup_program(ProgramObject& program, std::string vertex_filename, std::str
 	p.geometryShaderFilename = geometry_filename;
 
 	GLHelpers::Detail::ShaderCommandLine cmd;
-	cmd.m_Defines.push_back(GLHelpers::NameValue(std::string("LINEARIZE_DEPTH"), std::string("0") ));
+	cmd.m_Defines.push_back(GLHelpers::NameValue(std::string("LINEARIZE_DEPTH"), std::string("0")));
 
-	try {
+	try
+	{
 		program.CompileProgram(p, nullptr, cmd);
-	} catch (std::runtime_error(e)) {
+	}
+	catch (std::runtime_error(e))
+	{
 		std::cout << "Error creating opengl program" << std::endl;
 	}
-
 }
 
-void load_programs() {
+void load_programs()
+{
 	setup_program(depth_program, "base_depth.vert", "base_depth.frag");
 	setup_program(background_program, "quad.vert", "background.frag");
+	std::cout << "WoceWooce!!!!!!!!!!!!" << std::endl;
 	setup_program(render_program, "base.vert", "base_shade.frag", "base.geom");
 }
 
@@ -318,7 +365,8 @@ void clearScreen()
 
 	glClearDepth(1.0);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);	check_opengl();
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	check_opengl();
 }
 
 void renderBackground(TextureObject2D tex)
@@ -329,17 +377,19 @@ void renderBackground(TextureObject2D tex)
 
 	fbo.EnableConsecutiveDrawbuffers(1, 0);
 
-	if (hasCopyImage) {
+	if (hasCopyImage)
+	{
 		background_program.SetTexture("map", tex, 0);
-	} else {
+	}
+	else
+	{
 		clearScreen();
 		return;
 	}
 
-
 	GLState state;
 	state.setViewportBox(0, 0, window_width, window_height);
-	state.enable_depth_test  = false;
+	state.enable_depth_test = false;
 	state.enable_depth_write = false;
 	state.enable_blend = false;
 	state.enable_cull_face = false;
@@ -347,7 +397,7 @@ void renderBackground(TextureObject2D tex)
 
 	mat4 vMatrix = camera.view_matrix();
 	mat4 pMatrix = camera.proj_matrix();
-	background_program.SetUniform("vpMatrixInv", inverse(pMatrix * vMatrix) );
+	background_program.SetUniform("vpMatrixInv", inverse(pMatrix * vMatrix));
 	background_program.SetUniform("wsCamPos", camera.position);
 
 	glBindVertexArray(0);
@@ -355,7 +405,7 @@ void renderBackground(TextureObject2D tex)
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void renderDepth(MeshData& mesh)
+void renderDepth(MeshData &mesh)
 {
 	depth_program.Use();
 
@@ -390,7 +440,7 @@ void renderDepth(MeshData& mesh)
 	check_opengl();
 }
 
-void render(MeshData& mesh, LightData& lights, bool flat = false)
+void render(MeshData &mesh, LightData &lights, bool flat = false)
 {
 	render_program.Use();
 
@@ -429,7 +479,7 @@ void render(MeshData& mesh, LightData& lights, bool flat = false)
 
 	check_opengl();
 
-	mesh.gl.vao.Bind(); 
+	mesh.gl.vao.Bind();
 	mesh.gl.indexbuffer.Bind();
 
 	render_program.SetSSBO("material_ssbo", mesh.materialdata.materialListBuffer, 0);
@@ -439,12 +489,12 @@ void render(MeshData& mesh, LightData& lights, bool flat = false)
 
 	const int bytesPerElement = mesh.gl.indexbuffertype == GL_UNSIGNED_INT ? 4 : 2;
 	GLsizei total_elements = GLsizei(mesh.gl.indexbuffer.m_sizeInBytes / bytesPerElement);
-	glDrawElements(GL_TRIANGLES, total_elements, mesh.gl.indexbuffertype, OFFSET_POINTER(0) );
+	glDrawElements(GL_TRIANGLES, total_elements, mesh.gl.indexbuffertype, OFFSET_POINTER(0));
 
 	check_opengl();
 }
 
-void renderFluid(ScreenSpaceFluid& ssfluid)
+void renderFluid(ScreenSpaceFluid &ssfluid)
 {
 	ssfluid.sceneDepthTex = depthtex;
 	ssfluid.sceneColorTex = colortex;
@@ -454,20 +504,23 @@ void renderFluid(ScreenSpaceFluid& ssfluid)
 
 /* Constructs a simulator object, sets constraints, adds gravity, a floor with friction and
 triggers the precomputation. */
-ProjDynSimulator* initSimulator(MeshData& deformable, SimSettings& simSettings, std::string meshURL, bool directBufferMapping, BufferObject* fluidBuffer = NULL) {
+ProjDynSimulator *initSimulator(MeshData &deformable, SimSettings &simSettings, std::string meshURL, bool directBufferMapping, BufferObject *fluidBuffer = NULL)
+{
 	// Turn deformable into Eigen matrices
 	int numVerts = deformable.positions.size();
 	PDPositions verts(numVerts, 3);
 	PDPositions velos(numVerts, 3);
 	velos.setZero();
-	for (int i = 0; i < numVerts; i++) {
+	for (int i = 0; i < numVerts; i++)
+	{
 		verts(i, 0) = deformable.positions[i].x;
 		verts(i, 1) = deformable.positions[i].y;
 		verts(i, 2) = deformable.positions[i].z;
 	}
 	int numTris = deformable.indices.size() / 3;
 	PDTriangles tris(numTris, 3);
-	for (int i = 0; i < numTris; i++) {
+	for (int i = 0; i < numTris; i++)
+	{
 		tris(i, 0) = deformable.indices[i * 3 + 0];
 		tris(i, 1) = deformable.indices[i * 3 + 1];
 		tris(i, 2) = deformable.indices[i * 3 + 2];
@@ -478,18 +531,18 @@ ProjDynSimulator* initSimulator(MeshData& deformable, SimSettings& simSettings, 
 	double timeStep = 0.016666;
 	float p = simSettings.reductionParam;
 	int numberSamplesForVertexPosSubspace = (1 - p) * 20 + p * 200; // The number of degrees of freedom for the mesh vertex positions will be 12 times that
-	double radiusMultiplierForVertexPosSubspace = 1.1 + p * 0.3; // The larger this number, the larger the support of the base functions.
-	int dimensionOfConstraintProjectionsSubspace = 120 + p * 120; // The constraint projections subspace will be constructed to be twice that size and then condensed via an SVD
+	double radiusMultiplierForVertexPosSubspace = 1.1 + p * 0.3;	// The larger this number, the larger the support of the base functions.
+	int dimensionOfConstraintProjectionsSubspace = 120 + p * 120;	// The constraint projections subspace will be constructed to be twice that size and then condensed via an SVD
 	double radiusMultiplierForConstraintProjectionsSubspace = 2.7;
 	int numberSampledConstraints = 300 + p * 1000; // Number of constraints that will be evaluated each iteration
-	ProjDynSimulator* sim =
+	ProjDynSimulator *sim =
 		new ProjDynSimulator(tris, verts, velos, timeStep,
-			numberSamplesForVertexPosSubspace, radiusMultiplierForVertexPosSubspace,
-			dimensionOfConstraintProjectionsSubspace, radiusMultiplierForConstraintProjectionsSubspace,
-			numberSampledConstraints,
-			1000, 0, true, meshURL,
-			0., 8, 1.5, 10000,
-			4);
+							 numberSamplesForVertexPosSubspace, radiusMultiplierForVertexPosSubspace,
+							 dimensionOfConstraintProjectionsSubspace, radiusMultiplierForConstraintProjectionsSubspace,
+							 numberSampledConstraints,
+							 1000, 0, true, meshURL,
+							 0., 8, 1.5, 10000,
+							 4);
 
 	// For the simulation to be meaningful we need some sorts of constraints
 	// The following method adds volume preservation constraints to all tets
@@ -503,7 +556,7 @@ ProjDynSimulator* initSimulator(MeshData& deformable, SimSettings& simSettings, 
 
 	// Add fluid
 	float fq = simSettings.fluidQuality;
-	sim->addPICFLIP(20 + fq*80, simSettings.preventSolidPen, simSettings.addPool, simSettings.streamSize > 0, simSettings.poolGap, simSettings.poolHeight, simSettings.gridSize, 1, true, floorHeight, false, simSettings.streamSize);
+	sim->addPICFLIP(20 + fq * 80, simSettings.preventSolidPen, simSettings.addPool, simSettings.streamSize > 0, simSettings.poolGap, simSettings.poolHeight, simSettings.gridSize, 1, true, floorHeight, false, simSettings.streamSize);
 	sim->setPICFLIPParams(9, 1, 0.03, 50, false, 0.5, 0, 1, 1, 1, 0, 0.5, 150);
 
 	// The call to the setup function computes the subspaces for vertex
@@ -511,7 +564,8 @@ ProjDynSimulator* initSimulator(MeshData& deformable, SimSettings& simSettings, 
 	// for local and global steps
 	sim->setup();
 
-	if (directBufferMapping) {
+	if (directBufferMapping)
+	{
 		// Connect deformable positions buffer to simulator
 		// I have to reload the mesh here, since the buffers are broken
 		// after initializing the fluid simulation for some reason
@@ -525,7 +579,8 @@ ProjDynSimulator* initSimulator(MeshData& deformable, SimSettings& simSettings, 
 	}
 
 	// Connect particle buffer to screenspace fluid
-	if (sim->hasParticles() && fluidBuffer) {
+	if (sim->hasParticles() && fluidBuffer)
+	{
 		fluidBuffer->m_uiBufferIdx = sim->m_particleBufferID;
 		fluidBuffer->m_sizeInBytes = sim->getNumFreeParticles() * sizeof(float) * 3;
 		fluidBuffer->m_usage = GL_STATIC_DRAW;
@@ -534,10 +589,9 @@ ProjDynSimulator* initSimulator(MeshData& deformable, SimSettings& simSettings, 
 	return sim;
 }
 
-
 int main()
 {
-	//////////////// 
+	////////////////
 	FreeImage_Initialise();
 
 	////////////////
@@ -558,7 +612,7 @@ int main()
 	glfwWindowHint(GLFW_DOUBLEBUFFER, true);
 	glfwWindowHint(GLFW_DEPTH_BITS, 0);
 
-	GLFWwindow* window = glfwCreateWindow(window_width, window_height, "Immersed Real-Time Fluids", NULL, NULL);
+	GLFWwindow *window = glfwCreateWindow(window_width, window_height, "Immersed Real-Time Fluids", NULL, NULL);
 	if (!window)
 	{
 		std::cerr << "Error creating window." << std::endl;
@@ -577,34 +631,35 @@ int main()
 
 	////////////////
 	GLenum glewInitResult = glewInit();
-	if (glewInitResult != GL_NO_ERROR) {
+	if (glewInitResult != GL_NO_ERROR)
+	{
 		std::cerr << "Error creating window." << std::endl;
 		glfwTerminate();
 		return -1;
 	}
 	std::cout << "Initialized glew." << std::endl;
 
-
 	//////////////// Default render options
 	DefaultRenderOptions().vsync = false;
 	DefaultRenderOptions().alphatest = false;
-	for (auto& o : DefaultRenderOptions().misc_options) o = 0.5f;
+	for (auto &o : DefaultRenderOptions().misc_options)
+		o = 0.5f;
 
-	////////////////
-	// During init, enable debug output
+		////////////////
+		// During init, enable debug output
 #ifdef _DEBUG
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(DebugCallbackGL, 0);
 #endif
 
-	//////////////// 
+	////////////////
 	fbo.Create();
 	resize_textures(window_width, window_height);
 	check_opengl();
 
 	////////////////
 	MeshData scene_mesh;
-	std::string scene_mesh_filename = "data/immersed/scenes/floor.obj";
+	std::string scene_mesh_filename = "data/immersed/Scenes/floor.obj";
 	if (scene_mesh.load_obj(scene_mesh_filename, 0.f, false) != SUCCESS)
 	{
 		std::cerr << "Error loading model file " << scene_mesh_filename << std::endl;
@@ -626,7 +681,7 @@ int main()
 	}
 
 	////////////////
-	load_programs(); 
+	load_programs();
 	std::cout << "Created opengl program." << std::endl;
 
 	////////////////
@@ -635,7 +690,7 @@ int main()
 	camera.verticalFov_deg = 45;
 	camera.aspect = window_width / float(window_height);
 	camera.nearplane = 0.1f;
-	camera.farplane  = 2000.f;
+	camera.farplane = 2000.f;
 	camera.mov_speed = 10.0f;
 	camera.rot_speed = 0.001f;
 	prev_camera = camera;
@@ -656,23 +711,22 @@ int main()
 	////////////////
 	name_renderer.setup(size2D(window_width, window_height));
 
-
 	//////////////// ssfluid
 	ScreenSpaceFluid ssfluid;
 	ssfluid.InitResources();
-	//std::string equimap_name = "data/envmaps/werfenweng_Austria.exr";
+	// std::string equimap_name = "data/envmaps/werfenweng_Austria.exr";
 	std::string equimap_name = "data/envmaps/sky.exr";
 	TextureManager::instance().loadTexture(equimap_name, true);
 	if (TextureManager::instance().hasTexture(equimap_name))
 	{
-		TextureData& texdata = TextureManager::instance().getTexture(equimap_name);
-		ssfluid.envTex = *((GLHelpers::TextureObject2D*)(texdata.gltex)); //!!
+		TextureData &texdata = TextureManager::instance().getTexture(equimap_name);
+		ssfluid.envTex = *((GLHelpers::TextureObject2D *)(texdata.gltex)); //!!
 	}
 	std::vector<vec3> fluid_positions;
 	// Some placeholder fluid positions, in case no fluid is in the simulation
-	//loadFluidPositions("data/immersed/positions.bin", fluid_positions);
+	// loadFluidPositions("data/immersed/positions.bin", fluid_positions);
 	ssfluid.fluidPosition.Create(GL_ARRAY_BUFFER);
-	//ssfluid.fluidPosition.UploadData(fluid_positions.size() * sizeof(vec3), GL_STATIC_DRAW, fluid_positions.data());
+	// ssfluid.fluidPosition.UploadData(fluid_positions.size() * sizeof(vec3), GL_STATIC_DRAW, fluid_positions.data());
 	GUIManager::instance().addGUI("ssfluidgui", std::shared_ptr<BaseGUI>(new ScreenSpaceFluid::GUI(&ssfluid)));
 
 	//////////////// projective dynamics
@@ -708,8 +762,9 @@ int main()
 
 		glfwMakeContextCurrent(window);
 
-		{ PROFILE_SCOPE("Render")
-			//Render scene, deformable and fluid
+		{
+			PROFILE_SCOPE("Render")
+			// Render scene, deformable and fluid
 			lights.updateGLResources();
 			scene_mesh.materialdata.updateGLResources();
 			deformable.materialdata.updateGLResources();
@@ -730,20 +785,23 @@ int main()
 			// Perform Simulation step
 			sim->step();
 
-			if (!directBufferMapping) {
+			if (!directBufferMapping)
+			{
 				// Upload current deformable positions to buffer
-				PDPositions& curVerts = sim->getPositions();
+				PDPositions &curVerts = sim->getPositions();
 				PROJ_DYN_PARALLEL_FOR
-					for (int v = 0; v < numVerts; v++) {
-						curPos[v * 3 + 0] = curVerts(v, 0);
-						curPos[v * 3 + 1] = curVerts(v, 1);
-						curPos[v * 3 + 2] = curVerts(v, 2);
-					}
+				for (int v = 0; v < numVerts; v++)
+				{
+					curPos[v * 3 + 0] = curVerts(v, 0);
+					curPos[v * 3 + 1] = curVerts(v, 1);
+					curPos[v * 3 + 2] = curVerts(v, 2);
+				}
 				deformable.gl.posbuffer.UploadData(sizeof(float) * numVerts * 3, GL_STATIC_DRAW, curPos.data());
 			}
 
 			// Reset simulation if desired by user
-			if (simSettings.doSetup) {
+			if (simSettings.doSetup)
+			{
 				// Remove old simulator
 				GUIManager::instance().removeGUI("pdsimgui");
 				delete sim;
@@ -760,45 +818,50 @@ int main()
 		check_opengl();
 
 		//// Copy fbo contents to default window buffer
-		glBlitNamedFramebuffer( //name_renderer.fbo.m_uiOpenGLID, 0, 0, 0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitNamedFramebuffer( // name_renderer.fbo.m_uiOpenGLID, 0, 0, 0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 			fbo.m_uiOpenGLID, 0, 0, 0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 		//// Draw GUI
-		if (display_gui) GUIManager::instance().draw();
+		if (display_gui)
+			GUIManager::instance().draw();
 
 		//// Swap buffers
 		glfwSwapBuffers(window);
 
 		//// Update timings
 		TimingStats s = TimingManager::instance().getTimingStats("Render");
-		renderstats.time_cpu_ms  = s.cpu_time;
-		renderstats.time_gl_ms   = s.gl_time;
+		renderstats.time_cpu_ms = s.cpu_time;
+		renderstats.time_gl_ms = s.gl_time;
 		renderstats.time_cuda_ms = s.cuda_time;
 		renderstats.fps = 1000. / (s.cpu_time);
-		TimingManager::instance().endFrame();  
+		TimingManager::instance().endFrame();
 
-		//// Get input 
+		//// Get input
 		glfwPollEvents();
 
 		//// Update camera
 		s = TimingManager::instance().getTimingStats("Main loop");
 		float time = std::max(s.gl_time, std::max(s.cpu_time, s.cuda_time));
-		
+
 		prev_camera = camera;
-		if (camera_rotational_speed != vec2(0.f, 0.f) || camera_speed != vec3(0.f, 0.f, 0.f)) {
+		if (camera_rotational_speed != vec2(0.f, 0.f) || camera_speed != vec3(0.f, 0.f, 0.f))
+		{
 			camera.update(camera_rotational_speed, camera_speed * time * 0.001f);
 			camera_rotational_speed = vec2(0.f, 0.f);
 			camera.moved = true;
-		} else {
+		}
+		else
+		{
 			camera.update(camera_rotational_speed, camera_speed);
 			camera.moved = false;
 		}
 
 		//// Update vsync options
 		glfwSwapInterval(DefaultRenderOptions().vsync ? 1 : 0);
-		 
+
 		//// Load programs again if requested
-		if (DefaultRenderOptions().dirtyShaders) {
+		if (DefaultRenderOptions().dirtyShaders)
+		{
 			load_programs();
 			ssfluid.setDirtyShaders();
 			name_renderer.reload_programs();
@@ -814,7 +877,6 @@ int main()
 	colortex.Release();
 
 	ssfluid.ReleaseResources();
-
 
 	// Clear textures before leaving context
 	TextureManager::instance().clear();
